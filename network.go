@@ -1,3 +1,4 @@
+// Network layer implementation
 package main
 
 import (
@@ -52,12 +53,12 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	fmt.Printf("Received data: %s\n", string(buf))
+	log.Printf("Received data: %s\n", string(buf))
 
 	response := "Hello from the server!"
 	_, err = conn.Write([]byte(response))
 	if err != nil {
-		fmt.Println("Error writing:", err.Error())
+		log.Println("Error writing:", err.Error())
 		return
 	}
 }
