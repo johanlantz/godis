@@ -7,6 +7,12 @@ import (
 	"net"
 )
 
+// The network layer is only concerned about managing connections and bytestreams,
+// it has no notion of what RESP is.
+type CommandProcessor interface {
+	processCommand(data []byte) []byte
+}
+
 const defaultPort = 6379
 const defaultProtocol = "tcp"
 const defaultAddress = "localhost"
@@ -17,6 +23,7 @@ type ServerConfig struct {
 	protocol string
 }
 
+// Default server parameters for local testing purposes
 func defaultConfig() ServerConfig {
 	return ServerConfig{
 		addr:     defaultAddress,
@@ -25,7 +32,7 @@ func defaultConfig() ServerConfig {
 	}
 }
 
-func startServer(config *ServerConfig) {
+func startServer(config ServerConfig, cmdProc CommandProcessor) {
 	listener, err := net.Listen(config.protocol, fmt.Sprintf("%s:%d", config.addr, config.port))
 	if err != nil {
 		log.Panic("Error starting server:", err.Error())
@@ -39,11 +46,11 @@ func startServer(config *ServerConfig) {
 			log.Println("Error accepting connection:", err.Error())
 			return
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, cmdProc)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
 	defer conn.Close()
 
 	buf := make([]byte, 1024)
@@ -54,6 +61,8 @@ func handleConnection(conn net.Conn) {
 	}
 
 	log.Printf("Received data: %s\n", string(buf))
+
+	//req, err := newRespRequest(buf)
 
 	response := "Hello from the server!"
 	_, err = conn.Write([]byte(response))

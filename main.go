@@ -1,6 +1,6 @@
 package main
 
 func main() {
-	config := defaultConfig()
-	startServer(&config)
+
+	startServer(defaultConfig(), newRespCommandProcessor())
 }

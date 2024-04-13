@@ -56,5 +56,5 @@ func TestHandleConnection(t *testing.T) {
 	mockConn := MockConn{}
 	_, err := mockConn.Write([]byte("Hello"))
 	require.NoError(t, err)
-	handleConnection(&mockConn)
+	handleConnection(&mockConn, newRespCommandProcessor())
 }
