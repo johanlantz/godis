@@ -4,6 +4,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -21,17 +22,9 @@ type RespRequest struct {
 	args    []string
 }
 
-func isCommandSupported(value RespCommand) bool {
-	supportedRespCommands := []RespCommand{RESP_GET, RESP_SET}
-	for _, v := range supportedRespCommands {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
+var supportedRespCommands = []RespCommand{RESP_GET, RESP_SET}
 
-// Build a RespRequest struct from and incoming command.
+// Build a RespRequest struct from an incoming command.
 func newRespRequest(bytes []byte) (*RespRequest, error) {
 	cmd := string(bytes)
 
@@ -44,22 +37,31 @@ func newRespRequest(bytes []byte) (*RespRequest, error) {
 		return nil, errors.New("invalid command, missing terminating newline")
 	}
 
-	cmd_arr := strings.Split(cmd[:len(cmd)-len(suffix)], " ")
-	cmd_verb := cmd_arr[0]
+	// 2. Generate our array of command segments. Unlike Split, Fields removes
+	// multiple whitespaces automatically.
+	cmd_arr := strings.Fields(cmd[:len(cmd)-len(suffix)])
 
-	// 2. The command must be supported by our current implementation
-	if !isCommandSupported(RespCommand(cmd_verb)) {
+	// 3. Be nice and remove errounouse extra spaces, otherwise we have to check this
+	// for each command later on since it could mess with the keys/args.
+	for i, v := range cmd_arr {
+		cmd_arr[i] = strings.Trim(v, " ")
+	}
+	cmd_verb := RespCommand(cmd_arr[0])
+
+	// 4. The command must be supported by our current implementation
+	if !slices.Contains(supportedRespCommands, cmd_verb) {
 		return nil, fmt.Errorf("unknown command, %s", cmd_verb)
 	}
 
-	// 3. Support args list but do not prevent empty args list either
-	// Each command handle is responsible for the args later on.
+	// 5. Support args list but do not prevent empty args list either since
+	// future commands might use that.
+	// Each command handler is responsible for its args validation later on.
 	cmd_args := []string{}
 	if len(cmd_arr) > 1 {
 		cmd_args = cmd_arr[1:]
 	}
 
-	return &RespRequest{command: RespCommand(cmd_verb), args: cmd_args}, nil
+	return &RespRequest{command: cmd_verb, args: cmd_args}, nil
 }
 
 type ResponseDataType byte
@@ -82,5 +84,8 @@ func newRespResponse(responseType ResponseDataType, args []string) *RespResponse
 }
 
 func (rr RespResponse) marshalToBytes() []byte {
-	return append([]byte{byte(rr.t)}, []byte(rr.args[0])...)
+	bytes := []byte{byte(rr.t)}
+	bytes = fmt.Append(bytes, strings.Join(rr.args, " "))
+	bytes = fmt.Appendf(bytes, suffix)
+	return bytes
 }
