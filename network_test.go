@@ -54,7 +54,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestHandleConnection(t *testing.T) {
 	mockConn := MockConn{}
-	_, err := mockConn.Write([]byte("Hello"))
+	_, err := mockConn.Write([]byte("GET masterKey"))
 	require.NoError(t, err)
 	handleConnection(&mockConn, newRespCommandProcessor())
 }

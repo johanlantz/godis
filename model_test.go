@@ -26,12 +26,12 @@ func TestMalformedSet(t *testing.T) {
 }
 
 func TestBuildGetCommand(t *testing.T) {
-	// This is actually valid from the model perspective.
-	// It will fails during processing.
+	// This is valid from the model validation perspective.
+	// It will fail during processing.
 	cmd, err := newRespRequest([]byte("GET \r\n"))
 	require.NoError(t, err)
 	require.Equal(t, cmd.command, RESP_GET)
-	require.Equal(t, len(cmd.args), 1)
+	require.Equal(t, len(cmd.args), 0)
 
 	cmd, err = newRespRequest([]byte("GET masterKey\r\n"))
 	require.NoError(t, err)

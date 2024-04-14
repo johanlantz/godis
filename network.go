@@ -7,8 +7,8 @@ import (
 	"net"
 )
 
-// The network layer is only concerned about managing connections and bytestreams,
-// it has no notion of what RESP is.
+// The network layer is only concerned about managing connections and
+// bytestreams, it has no notion of what RESP is.
 type CommandProcessor interface {
 	processCommand(data []byte) []byte
 }
@@ -53,18 +53,17 @@ func startServer(config ServerConfig, cmdProc CommandProcessor) {
 func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
 	defer conn.Close()
 
-	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
+	bytes := make([]byte, 1024)
+	n, err := conn.Read(bytes)
 	if err != nil {
 		fmt.Println("Error reading:", err.Error())
 		return
 	}
 
-	log.Printf("Received data: %s\n", string(buf))
+	log.Printf("Received data: %s\n", string(bytes[:n]))
 
-	//req, err := newRespRequest(buf)
+	response := cmdProc.processCommand(bytes)
 
-	response := "Hello from the server!"
 	_, err = conn.Write([]byte(response))
 	if err != nil {
 		log.Println("Error writing:", err.Error())
