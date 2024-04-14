@@ -9,5 +9,5 @@ import (
 func TestInvalidCommand(t *testing.T) {
 	processor := newRespCommandProcessor()
 	response := processor.processCommand([]byte("SETI\r\nr"))
-	require.Contains(t, response, "ERR")
+	require.Contains(t, string(response), RESP_ERR)
 }
