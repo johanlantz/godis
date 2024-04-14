@@ -20,7 +20,7 @@ func (rcp RespCommandProcessor) processCommand(bytes []byte) []byte {
 	err := validateRespCommand(cmd_arr)
 
 	if err != nil {
-		response := newRespResponse(RESP_SIMPLE_ERROR, []string{"ERR"}).marshalToBytes()
+		response := newRespResponse(RESP_SIMPLE_ERROR, []string{RESP_ERR}).marshalToBytes()
 		return response
 	}
 

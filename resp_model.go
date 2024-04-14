@@ -33,6 +33,9 @@ const (
 	RESP_SIMPLE_ERROR  ResponseDataType = '-'
 )
 
+var RESP_ERR = "ERR"
+var RESP_OK = "OK"
+
 type RespResponse struct {
 	t    ResponseDataType
 	args []string
