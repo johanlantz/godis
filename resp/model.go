@@ -28,14 +28,19 @@ var supportedRespCommands = []RespCommand{RESP_GET, RESP_SET}
 func newRespRequest(bytes []byte) (*RespRequest, error) {
 	cmd := string(bytes)
 
-	// 1. \r\n is always required
-	if len(cmd) < len(suffix) || cmd[len(cmd)-len(suffix):] != suffix {
-		return nil, errors.New("invalid command, missing terminating newline")
+	// 1. Must be a bulk string array starting with * and ending with \r\n.
+	if len(cmd) < len(suffix) || cmd[0] != '*' || cmd[len(cmd)-len(suffix):] != suffix {
+		return nil, errors.New("invalid command")
 	}
 
-	// 2. Generate our array of command segments. Unlike Split, Fields removes
-	// multiple whitespaces automatically.
-	cmd_arr := strings.Fields(cmd[:len(cmd)-len(suffix)])
+	// 2. Generate our array of command segments from the bulk string array.
+	bulk_array := strings.Fields(cmd[:len(cmd)-len(suffix)])
+	cmd_arr := []string{}
+	for _, element := range bulk_array {
+		if element[0] != DT_BULK_STRINGS && element[0] != DT_ARRAYS {
+			cmd_arr = append(cmd_arr, element)
+		}
+	}
 	cmd_verb := RespCommand(cmd_arr[0])
 
 	// 3. The command must be supported by our current implementation
