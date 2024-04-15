@@ -1,18 +1,55 @@
 package storage
 
-var storage = make(map[string]StorageEntry)
+type Storage struct {
+	readCh  chan readRequest
+	writeCh chan writeRequest
+	data    map[string]StorageEntry
+}
 
-// Return a copy so caller does not get a data access pointer.
-func Get(key string) StorageEntry {
-	v, exists := storage[key]
-	if !exists {
-		return StorageEntry{}
-	} else {
-		return v
+type readRequest struct {
+	key      string
+	resultCh chan<- StorageEntry
+}
+
+type writeRequest struct {
+	key   string
+	value StorageEntry
+	done  chan<- struct{}
+}
+
+func NewStorage() *Storage {
+	kv := &Storage{
+		readCh:  make(chan readRequest),
+		writeCh: make(chan writeRequest),
+		data:    make(map[string]StorageEntry),
+	}
+	go kv.processReadRequests()
+	go kv.processWriteRequests()
+	return kv
+}
+
+func (kv *Storage) processReadRequests() {
+	for req := range kv.readCh {
+		value := kv.data[req.key]
+		req.resultCh <- value
 	}
 }
 
-// Set can't fail, if a previous existing dataType is different, we overwrite.
-func Set(key string, entry StorageEntry) {
-	storage[key] = entry
+func (kv *Storage) processWriteRequests() {
+	for req := range kv.writeCh {
+		kv.data[req.key] = req.value
+		close(req.done)
+	}
+}
+
+func (kv *Storage) Get(key string) StorageEntry {
+	resultCh := make(chan StorageEntry)
+	kv.readCh <- readRequest{key: key, resultCh: resultCh}
+	return <-resultCh
+}
+
+func (kv *Storage) Set(key string, value StorageEntry) {
+	done := make(chan struct{})
+	kv.writeCh <- writeRequest{key: key, value: value, done: done}
+	<-done
 }

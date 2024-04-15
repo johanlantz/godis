@@ -1,7 +1,7 @@
 // CommandProcessor interface implementation for RESP.
 // It accepts a byte slice from the network layer, ensures
 // that the model creation is correct before passing it on
-// to the next layer. Once processed, it provdes the network
+// to the next layer. Once processed, it provides the network
 // layer with a generic byte slice response in return.
 package resp
 
@@ -12,13 +12,16 @@ import (
 	"github.com/johanlantz/redis/storage"
 )
 
-type RespCommandProcessor struct{}
-
-func NewRespCommandProcessor() *RespCommandProcessor {
-	return &RespCommandProcessor{}
+type RespCommandProcessor struct {
+	storage *storage.Storage
 }
 
-func (rcp RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
+func NewRespCommandProcessor() *RespCommandProcessor {
+
+	return &RespCommandProcessor{storage: storage.NewStorage()}
+}
+
+func (rcp *RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
 	request, err := newRespRequest(bytes)
 	var response *RespResponse
 
@@ -29,9 +32,9 @@ func (rcp RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
 
 	switch request.command {
 	case RESP_GET:
-		response, err = process_get(request)
+		response, err = rcp.process_get(request)
 	case RESP_SET:
-		response, err = process_set(request)
+		response, err = rcp.process_set(request)
 	default:
 		err = errors.New("unknown command")
 	}
@@ -42,15 +45,15 @@ func (rcp RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
 	return response.marshalToBytes()
 }
 
-func process_get(request *RespRequest) (*RespResponse, error) {
+func (rcp *RespCommandProcessor) process_get(request *RespRequest) (*RespResponse, error) {
 	if len(request.args) < 1 {
 		return nil, errors.New("get command requires at least the key parameter")
 	}
-	entry := storage.Get(request.args[0])
+	entry := rcp.storage.Get(request.args[0])
 	return newRespResponse(ResponseDataType(entry.DataType), []string{string(entry.Value)}), nil
 }
 
-func process_set(request *RespRequest) (*RespResponse, error) {
+func (rcp *RespCommandProcessor) process_set(request *RespRequest) (*RespResponse, error) {
 	if len(request.args) < 2 {
 		return nil, errors.New("set command requires key and value parameters")
 	}
@@ -58,9 +61,9 @@ func process_set(request *RespRequest) (*RespResponse, error) {
 	key := request.args[0]
 	value := request.args[1]
 	if _, err := strconv.Atoi(value); err == nil {
-		storage.Set(key, storage.StorageEntry{DataType: DT_INTEGER, Value: []byte(value)})
+		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_INTEGER, Value: []byte(value)})
 	} else {
-		storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
+		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
 	}
 
 	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil
