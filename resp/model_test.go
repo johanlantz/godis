@@ -1,4 +1,4 @@
-package main
+package resp
 
 import (
 	"testing"
@@ -34,6 +34,11 @@ func TestBuildGetCommand(t *testing.T) {
 	require.Equal(t, len(cmd.args), 0)
 
 	cmd, err = newRespRequest([]byte("GET masterKey\r\n"))
+	require.NoError(t, err)
+	require.Equal(t, cmd.command, RESP_GET)
+	require.Equal(t, len(cmd.args), 1)
+
+	cmd, err = newRespRequest([]byte("GET    masterKey    \r\n"))
 	require.NoError(t, err)
 	require.Equal(t, cmd.command, RESP_GET)
 	require.Equal(t, len(cmd.args), 1)

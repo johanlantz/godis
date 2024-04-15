@@ -1,5 +1,5 @@
 // Resp protocol models for requests and responses
-package main
+package resp
 
 import (
 	"errors"
@@ -24,13 +24,9 @@ type RespRequest struct {
 
 var supportedRespCommands = []RespCommand{RESP_GET, RESP_SET}
 
-// Build a RespRequest struct from an incoming command.
+// Build a generic RespRequest struct from an incoming command.
 func newRespRequest(bytes []byte) (*RespRequest, error) {
 	cmd := string(bytes)
-
-	// Perform only generic validations since each RESP command has its own
-	// requirements for the args. This keeps the responsability of the model
-	// simple while still allowing us to catch generic errors early.
 
 	// 1. \r\n is always required
 	if len(cmd) < len(suffix) || cmd[len(cmd)-len(suffix):] != suffix {
@@ -40,22 +36,14 @@ func newRespRequest(bytes []byte) (*RespRequest, error) {
 	// 2. Generate our array of command segments. Unlike Split, Fields removes
 	// multiple whitespaces automatically.
 	cmd_arr := strings.Fields(cmd[:len(cmd)-len(suffix)])
-
-	// 3. Be nice and remove errounouse extra spaces, otherwise we have to check this
-	// for each command later on since it could mess with the keys/args.
-	for i, v := range cmd_arr {
-		cmd_arr[i] = strings.Trim(v, " ")
-	}
 	cmd_verb := RespCommand(cmd_arr[0])
 
-	// 4. The command must be supported by our current implementation
+	// 3. The command must be supported by our current implementation
 	if !slices.Contains(supportedRespCommands, cmd_verb) {
 		return nil, fmt.Errorf("unknown command, %s", cmd_verb)
 	}
 
-	// 5. Support args list but do not prevent empty args list either since
-	// future commands might use that.
-	// Each command handler is responsible for its args validation later on.
+	// 4. Each command handler is responsible for its args validation later on.
 	cmd_args := []string{}
 	if len(cmd_arr) > 1 {
 		cmd_args = cmd_arr[1:]
@@ -65,14 +53,6 @@ func newRespRequest(bytes []byte) (*RespRequest, error) {
 }
 
 type ResponseDataType byte
-
-const (
-	RESP_SIMPLE_STRING ResponseDataType = '+'
-	RESP_SIMPLE_ERROR  ResponseDataType = '-'
-
-	RESP_OK  = "OK"
-	RESP_ERR = "ERR"
-)
 
 type RespResponse struct {
 	t    ResponseDataType

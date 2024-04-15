@@ -3,22 +3,27 @@
 // that the model creation is correct before passing it on
 // to the next layer. Once processed, it provdes the network
 // layer with a generic byte slice response in return.
-package main
+package resp
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+
+	"github.com/johanlantz/redis/storage"
+)
 
 type RespCommandProcessor struct{}
 
-func newRespCommandProcessor() *RespCommandProcessor {
+func NewRespCommandProcessor() *RespCommandProcessor {
 	return &RespCommandProcessor{}
 }
 
-func (rcp RespCommandProcessor) processCommand(bytes []byte) []byte {
+func (rcp RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
 	request, err := newRespRequest(bytes)
 	var response *RespResponse
 
 	if err != nil {
-		response = newRespResponse(RESP_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
+		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
 		return response.marshalToBytes()
 	}
 
@@ -32,7 +37,7 @@ func (rcp RespCommandProcessor) processCommand(bytes []byte) []byte {
 	}
 
 	if err != nil {
-		response = newRespResponse(RESP_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
+		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
 	}
 	return response.marshalToBytes()
 }
@@ -41,14 +46,22 @@ func process_get(request *RespRequest) (*RespResponse, error) {
 	if len(request.args) < 1 {
 		return nil, errors.New("get command requires at least the key parameter")
 	}
-	// TODO, add storage
-	return newRespResponse(RESP_SIMPLE_STRING, []string{RESP_OK}), nil
+	entry := storage.Get(request.args[0])
+	return newRespResponse(ResponseDataType(entry.DataType), []string{string(entry.Value)}), nil
 }
 
 func process_set(request *RespRequest) (*RespResponse, error) {
 	if len(request.args) < 2 {
 		return nil, errors.New("set command requires key and value parameters")
 	}
-	// TODO, add storage
-	return newRespResponse(RESP_SIMPLE_STRING, []string{RESP_OK}), nil
+
+	key := request.args[0]
+	value := request.args[1]
+	if _, err := strconv.Atoi(value); err == nil {
+		storage.Set(key, storage.StorageEntry{DataType: DT_INTEGER, Value: []byte(value)})
+	} else {
+		storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
+	}
+
+	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil
 }

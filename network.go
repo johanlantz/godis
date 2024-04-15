@@ -10,7 +10,7 @@ import (
 // The network layer is only concerned about managing connections and
 // bytestreams, it has no notion of what RESP is.
 type CommandProcessor interface {
-	processCommand(data []byte) []byte
+	ProcessCommand(data []byte) []byte
 }
 
 const defaultPort = 6379
@@ -62,7 +62,7 @@ func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
 
 	log.Printf("Received data: %s\n", string(bytes[:n]))
 
-	response := cmdProc.processCommand(bytes)
+	response := cmdProc.ProcessCommand(bytes[:n])
 
 	_, err = conn.Write([]byte(response))
 	if err != nil {
