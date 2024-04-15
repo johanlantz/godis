@@ -1,6 +1,8 @@
 package main
 
+import "github.com/johanlantz/redis/resp"
+
 func main() {
 
-	startServer(defaultConfig(), newRespCommandProcessor())
+	startServer(defaultConfig(), resp.NewRespCommandProcessor())
 }
