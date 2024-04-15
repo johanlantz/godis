@@ -1,5 +1,5 @@
 // Network layer implementation
-package main
+package network
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ type ServerConfig struct {
 }
 
 // Default server parameters for local testing purposes
-func defaultConfig() ServerConfig {
+func DefaultConfig() ServerConfig {
 	return ServerConfig{
 		addr:     defaultAddress,
 		port:     defaultPort,
@@ -32,7 +32,7 @@ func defaultConfig() ServerConfig {
 	}
 }
 
-func startServer(config ServerConfig, cmdProc CommandProcessor) {
+func StartServer(config ServerConfig, cmdProc CommandProcessor) {
 	listener, err := net.Listen(config.protocol, fmt.Sprintf("%s:%d", config.addr, config.port))
 	if err != nil {
 		log.Panic("Error starting server:", err.Error())

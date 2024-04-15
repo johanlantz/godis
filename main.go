@@ -1,8 +1,11 @@
 package main
 
-import "github.com/johanlantz/redis/resp"
+import (
+	"github.com/johanlantz/redis/network"
+	"github.com/johanlantz/redis/resp"
+)
 
 func main() {
 
-	startServer(defaultConfig(), resp.NewRespCommandProcessor())
+	network.StartServer(network.DefaultConfig(), resp.NewRespCommandProcessor())
 }

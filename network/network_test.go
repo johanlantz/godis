@@ -1,4 +1,4 @@
-package main
+package network
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ func (c *MockConn) SetWriteDeadline(t time.Time) error {
 }
 
 func TestDefaultConfig(t *testing.T) {
-	config := defaultConfig()
+	config := DefaultConfig()
 	require.Equal(t, config.addr, defaultAddress)
 	require.Equal(t, config.port, defaultPort)
 	require.Equal(t, config.protocol, defaultProtocol)
