@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/johanlantz/redis/resp"
+	"github.com/johanlantz/redis/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +56,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestHandleConnection(t *testing.T) {
 	mockConn := MockConn{}
-	_, err := mockConn.Write([]byte("SET masterKey myValue\r\n"))
+	_, err := mockConn.Write(utils.MarshalToResp("SET masterKey myValue"))
 	require.NoError(t, err)
 	handleConnection(&mockConn, resp.NewRespCommandProcessor())
 

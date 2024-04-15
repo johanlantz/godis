@@ -34,8 +34,6 @@ func newRespRequest(bytes []byte) (*RespRequest, error) {
 	}
 
 	// 2. Generate our array of command segments from the bulk string array.
-	// Thanks to Fields, it works with plain text unit tests as well
-	// so leaving it like this for now (until tests can encode bulk string arrays).
 	bulk_array := strings.Fields(cmd[:len(cmd)-len(suffix)])
 	cmd_arr := []string{}
 	for _, element := range bulk_array {
