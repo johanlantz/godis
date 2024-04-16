@@ -7,7 +7,7 @@ const (
 	DT_BULK_STRINGS     = '$'
 	DT_ARRAYS           = '*'
 	DT_NULLS            = '_'
-	DT_BOOLEANS         = '*'
+	DT_BOOLEANS         = '#'
 	DT_DOUBLES          = ','
 	DT_BIG_NUMBERS      = '('
 	DT_BULK_ERRORS      = '|'
