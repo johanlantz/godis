@@ -67,7 +67,7 @@ func (rcp *RespCommandProcessor) process_set(request *RespRequest) (*RespRespons
 	} else if _, err := strconv.ParseFloat(value, 64); err == nil {
 		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_DOUBLES, Value: []byte(value)})
 	} else if _, err := strconv.ParseBool(value); err == nil {
-		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_BOOLEANS, Value: []byte(value)})
+		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_BOOLEANS, Value: []byte{value[0]}})
 	} else {
 		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
 	}

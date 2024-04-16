@@ -53,20 +53,23 @@ func StartServer(config ServerConfig, cmdProc CommandProcessor) {
 func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
 	defer conn.Close()
 
-	bytes := make([]byte, 1024)
-	n, err := conn.Read(bytes)
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		return
+	for {
+		bytes := make([]byte, 1024)
+		n, err := conn.Read(bytes)
+		if err != nil {
+			fmt.Println("Error reading:", err.Error())
+			break
+		}
+
+		log.Printf("Received: %s\n", string(bytes[:n]))
+
+		response := cmdProc.ProcessCommand(bytes[:n])
+
+		_, err = conn.Write([]byte(response))
+		if err != nil {
+			log.Println("Error writing:", err.Error())
+			break
+		}
 	}
-
-	log.Printf("Received data: %s\n", string(bytes[:n]))
-
-	response := cmdProc.ProcessCommand(bytes[:n])
-
-	_, err = conn.Write([]byte(response))
-	if err != nil {
-		log.Println("Error writing:", err.Error())
-		return
-	}
+	log.Printf("closing connection")
 }
