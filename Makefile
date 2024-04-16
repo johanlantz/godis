@@ -2,4 +2,7 @@
 test:
 	go test -v -cover -short ./...
 	
-.PHONY: test
+server:
+	go run main.go
+
+.PHONY: test server

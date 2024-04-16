@@ -50,6 +50,9 @@ func (rcp *RespCommandProcessor) process_get(request *RespRequest) (*RespRespons
 		return nil, errors.New("get command requires at least the key parameter")
 	}
 	entry := rcp.storage.Get(request.args[0])
+	if entry.IsNull() {
+		return newRespResponse(DT_NULLS, []string{}), nil
+	}
 	return newRespResponse(ResponseDataType(entry.DataType), []string{string(entry.Value)}), nil
 }
 
@@ -57,11 +60,14 @@ func (rcp *RespCommandProcessor) process_set(request *RespRequest) (*RespRespons
 	if len(request.args) < 2 {
 		return nil, errors.New("set command requires key and value parameters")
 	}
-
 	key := request.args[0]
 	value := request.args[1]
 	if _, err := strconv.Atoi(value); err == nil {
 		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_INTEGER, Value: []byte(value)})
+	} else if _, err := strconv.ParseFloat(value, 64); err == nil {
+		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_DOUBLES, Value: []byte(value)})
+	} else if _, err := strconv.ParseBool(value); err == nil {
+		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_BOOLEANS, Value: []byte(value)})
 	} else {
 		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
 	}
