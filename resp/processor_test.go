@@ -76,11 +76,11 @@ func TestBool(t *testing.T) {
 	require.Equal(t, "+OK\r\n", string(response))
 
 	response = processor.ProcessCommand(utils.MarshalToResp("GET myBool"))
-	require.Equal(t, "#true\r\n", string(response))
+	require.Equal(t, "#t\r\n", string(response))
 
 	response = processor.ProcessCommand(utils.MarshalToResp("SET myBool false"))
 	require.Equal(t, "+OK\r\n", string(response))
 
 	response = processor.ProcessCommand(utils.MarshalToResp("GET myBool"))
-	require.Equal(t, "#false\r\n", string(response))
+	require.Equal(t, "#f\r\n", string(response))
 }
