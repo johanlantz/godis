@@ -1,7 +1,7 @@
 // CommandProcessor interface implementation for RESP.
-// It accepts a byte slice from the network layer, ensures
-// that the model creation is correct before passing it on
-// to the next layer. Once processed, it provides the network
+// It accepts a byte slice from the network layer and ensures
+// that the model creation is correct before passing it on.
+// Once processed, it provides the network
 // layer with a generic byte slice response in return.
 package resp
 
@@ -12,13 +12,20 @@ import (
 	"github.com/johanlantz/redis/storage"
 )
 
-type RespCommandProcessor struct {
-	storage *storage.Storage
+// The processor handles the business logic for RESP signalling
+// and requires a storage. The storage however can be implemented
+// with different characterics if needed.
+type KVStorage interface {
+	Get(key string) storage.Entry
+	Set(key string, value storage.Entry)
 }
 
-func NewRespCommandProcessor() *RespCommandProcessor {
+type RespCommandProcessor struct {
+	storage KVStorage
+}
 
-	return &RespCommandProcessor{storage: storage.NewStorage()}
+func NewRespCommandProcessor(storage KVStorage) *RespCommandProcessor {
+	return &RespCommandProcessor{storage: storage}
 }
 
 func (rcp *RespCommandProcessor) ProcessCommand(bytes []byte) []byte {
@@ -63,13 +70,13 @@ func (rcp *RespCommandProcessor) process_set(request *RespRequest) (*RespRespons
 	key := request.args[0]
 	value := request.args[1]
 	if _, err := strconv.Atoi(value); err == nil {
-		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_INTEGER, Value: []byte(value)})
+		rcp.storage.Set(key, storage.Entry{DataType: DT_INTEGER, Value: []byte(value)})
 	} else if _, err := strconv.ParseFloat(value, 64); err == nil {
-		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_DOUBLES, Value: []byte(value)})
+		rcp.storage.Set(key, storage.Entry{DataType: DT_DOUBLES, Value: []byte(value)})
 	} else if _, err := strconv.ParseBool(value); err == nil {
-		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_BOOLEANS, Value: []byte{value[0]}})
+		rcp.storage.Set(key, storage.Entry{DataType: DT_BOOLEANS, Value: []byte{value[0]}})
 	} else {
-		rcp.storage.Set(key, storage.StorageEntry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
+		rcp.storage.Set(key, storage.Entry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
 	}
 
 	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil

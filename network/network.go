@@ -8,7 +8,8 @@ import (
 )
 
 // The network layer is only concerned about managing connections and
-// bytestreams, it has no notion of what RESP is.
+// bytestreams. It has no notion of what RESP is so we need to provide
+// an implementation that has this knownledge.
 type CommandProcessor interface {
 	ProcessCommand(data []byte) []byte
 }

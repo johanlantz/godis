@@ -3,9 +3,11 @@ package main
 import (
 	"github.com/johanlantz/redis/network"
 	"github.com/johanlantz/redis/resp"
+	"github.com/johanlantz/redis/storage"
 )
 
 func main() {
 
-	network.StartServer(network.DefaultConfig(), resp.NewRespCommandProcessor())
+	storage := storage.NewStorage()
+	network.StartServer(network.DefaultConfig(), resp.NewRespCommandProcessor(storage))
 }
