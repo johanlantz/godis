@@ -21,3 +21,8 @@ const (
 	RESP_OK  = "OK"
 	RESP_ERR = "ERR"
 )
+
+const (
+	RESP_GET RespCommand = "GET"
+	RESP_SET RespCommand = "SET"
+)

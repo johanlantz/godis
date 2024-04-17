@@ -16,6 +16,15 @@ type KVStorage interface {
 	Set(key string, value storage.Entry)
 }
 
+type RespFunc = func(request *RespRequest, kv KVStorage) (*RespResponse, error)
+
+// These are all our implemented commands. Implementing new ones only requires
+// adding an entry here with the corresponding processor function.
+var processors = map[RespCommand]RespFunc{
+	RESP_GET: process_get,
+	RESP_SET: process_set,
+}
+
 // Redis proccesses in a single thread. This "event loop" provides the
 // same behaviour while offering concurrency for the incoming connections.
 // It also means the storage does not have to worry about race conditions.
@@ -37,14 +46,7 @@ func processCommand(bytes []byte, processingChannel chan []byte, storage KVStora
 		return
 	}
 
-	switch request.command {
-	case RESP_GET:
-		response, err = process_get(request, storage)
-	case RESP_SET:
-		response, err = process_set(request, storage)
-	default:
-		err = errors.New("unknown command")
-	}
+	response, err = processors[request.command](request, storage)
 
 	if err != nil {
 		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})

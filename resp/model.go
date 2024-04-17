@@ -12,19 +12,14 @@ var suffix = "\r\n"
 
 type RespCommand string
 
-const (
-	RESP_GET RespCommand = "GET"
-	RESP_SET RespCommand = "SET"
-)
-
 type RespRequest struct {
 	command RespCommand
 	args    []string
 }
 
-var supportedRespCommands = []RespCommand{RESP_GET, RESP_SET}
+var supportedCommands = []RespCommand{RESP_GET, RESP_SET}
 
-// Build a generic RespRequest struct from an incoming command.
+// Perform basic validation and Build a RespRequest from an incoming command.
 func newRespRequest(bytes []byte) (*RespRequest, error) {
 	cmd := string(bytes)
 
@@ -44,11 +39,11 @@ func newRespRequest(bytes []byte) (*RespRequest, error) {
 	cmd_verb := RespCommand(cmd_arr[0])
 
 	// 3. The command must be supported by our current implementation
-	if !slices.Contains(supportedRespCommands, cmd_verb) {
+	if !slices.Contains(supportedCommands, cmd_verb) {
 		return nil, fmt.Errorf("unknown command, %s", cmd_verb)
 	}
 
-	// 4. Each command handler is responsible for its args validation later on.
+	// 4. Each command processor is responsible for validating the args later on.
 	cmd_args := []string{}
 	if len(cmd_arr) > 1 {
 		cmd_args = cmd_arr[1:]
