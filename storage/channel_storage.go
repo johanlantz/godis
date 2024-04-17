@@ -1,6 +1,8 @@
+// A sample storage implementation with different channels for read and write.
+// Not relevant anymore since the processor handles things sequentially now.
 package storage
 
-type Storage struct {
+type ChannelStorage struct {
 	readCh  chan readRequest
 	writeCh chan writeRequest
 	data    map[string]Entry
@@ -17,8 +19,8 @@ type writeRequest struct {
 	done  chan<- struct{}
 }
 
-func NewStorage() *Storage {
-	kv := &Storage{
+func NewChannelStorage() *ChannelStorage {
+	kv := &ChannelStorage{
 		readCh:  make(chan readRequest),
 		writeCh: make(chan writeRequest),
 		data:    make(map[string]Entry),
@@ -28,27 +30,27 @@ func NewStorage() *Storage {
 	return kv
 }
 
-func (kv *Storage) processReadRequests() {
+func (kv *ChannelStorage) processReadRequests() {
 	for req := range kv.readCh {
 		value := kv.data[req.key]
 		req.resultCh <- value
 	}
 }
 
-func (kv *Storage) processWriteRequests() {
+func (kv *ChannelStorage) processWriteRequests() {
 	for req := range kv.writeCh {
 		kv.data[req.key] = req.value
 		close(req.done)
 	}
 }
 
-func (kv *Storage) Get(key string) Entry {
+func (kv *ChannelStorage) Get(key string) Entry {
 	resultCh := make(chan Entry)
 	kv.readCh <- readRequest{key: key, resultCh: resultCh}
 	return <-resultCh
 }
 
-func (kv *Storage) Set(key string, value Entry) {
+func (kv *ChannelStorage) Set(key string, value Entry) {
 	done := make(chan struct{})
 	kv.writeCh <- writeRequest{key: key, value: value, done: done}
 	<-done

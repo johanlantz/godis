@@ -5,14 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-)
 
-// The network layer is only concerned about managing connections and
-// bytestreams. It has no notion of what RESP is so we need to provide
-// an implementation that has this knownledge.
-type CommandProcessor interface {
-	ProcessCommand(data []byte) []byte
-}
+	"github.com/johanlantz/redis/resp"
+)
 
 const defaultPort = 6379
 const defaultProtocol = "tcp"
@@ -33,7 +28,7 @@ func DefaultConfig() ServerConfig {
 	}
 }
 
-func StartServer(config ServerConfig, cmdProc CommandProcessor) {
+func StartServer(config ServerConfig, storage resp.KVStorage) {
 	listener, err := net.Listen(config.protocol, fmt.Sprintf("%s:%d", config.addr, config.port))
 	if err != nil {
 		log.Panic("Error starting server:", err.Error())
@@ -41,17 +36,20 @@ func StartServer(config ServerConfig, cmdProc CommandProcessor) {
 	}
 	defer listener.Close()
 
+	processingChannel := make(chan []byte)
+	resp.StartCommandProcessor(processingChannel, storage)
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println("Error accepting connection:", err.Error())
 			return
 		}
-		go handleConnection(conn, cmdProc)
+		go handleConnection(conn, processingChannel)
 	}
 }
 
-func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
+func handleConnection(conn net.Conn, processingChannel chan []byte) {
 	defer conn.Close()
 
 	for {
@@ -64,7 +62,8 @@ func handleConnection(conn net.Conn, cmdProc CommandProcessor) {
 
 		log.Printf("Received: %s\n", string(bytes[:n]))
 
-		response := cmdProc.ProcessCommand(bytes[:n])
+		processingChannel <- bytes[:n]
+		response := <-processingChannel
 
 		_, err = conn.Write([]byte(response))
 		if err != nil {
