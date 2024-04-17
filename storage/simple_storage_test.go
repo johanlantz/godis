@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetWhenNotExisting(t *testing.T) {
-	storage := NewStorage()
+func TestSimpleGetWhenNotExisting(t *testing.T) {
+	storage := NewSimpleStorage()
 	v := storage.Get("masterKey")
 	require.Condition(t, v.IsNull)
 }
 
-func TestSetGetSimpleString(t *testing.T) {
-	storage := NewStorage()
+func TestSimpleSetGetSimpleString(t *testing.T) {
+	storage := NewSimpleStorage()
 	key := "masterKey"
 	setValue := []byte("hello")
 	dt := byte('+')
