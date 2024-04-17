@@ -1,5 +1,5 @@
 // A sample storage implementation with different channels for read and write.
-// Not relevant anymore since the processor handles things sequentially now.
+// Not used anymore since the processor handles things sequentially now.
 package storage
 
 type ChannelStorage struct {

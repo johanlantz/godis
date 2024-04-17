@@ -1,6 +1,6 @@
-// Simplest storage possible but it requires on someone else guaranteeing
+// Simplest storage possible but it requires someone else guaranteeing
 // sequential execution. In the current solution this is managed by the
-// processor.
+// resp processor so this is ok.
 package storage
 
 type SimpleStorage struct {
