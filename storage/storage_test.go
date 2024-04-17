@@ -17,7 +17,7 @@ func TestSetGetSimpleString(t *testing.T) {
 	key := "masterKey"
 	setValue := []byte("hello")
 	dt := byte('+')
-	storage.Set(key, StorageEntry{DataType: dt, Value: []byte(setValue)})
+	storage.Set(key, Entry{DataType: dt, Value: []byte(setValue)})
 	getValue := storage.Get(key)
 	require.Equal(t, setValue, getValue.Value)
 	require.Equal(t, dt, getValue.DataType)

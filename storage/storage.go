@@ -3,17 +3,17 @@ package storage
 type Storage struct {
 	readCh  chan readRequest
 	writeCh chan writeRequest
-	data    map[string]StorageEntry
+	data    map[string]Entry
 }
 
 type readRequest struct {
 	key      string
-	resultCh chan<- StorageEntry
+	resultCh chan<- Entry
 }
 
 type writeRequest struct {
 	key   string
-	value StorageEntry
+	value Entry
 	done  chan<- struct{}
 }
 
@@ -21,7 +21,7 @@ func NewStorage() *Storage {
 	kv := &Storage{
 		readCh:  make(chan readRequest),
 		writeCh: make(chan writeRequest),
-		data:    make(map[string]StorageEntry),
+		data:    make(map[string]Entry),
 	}
 	go kv.processReadRequests()
 	go kv.processWriteRequests()
@@ -42,13 +42,13 @@ func (kv *Storage) processWriteRequests() {
 	}
 }
 
-func (kv *Storage) Get(key string) StorageEntry {
-	resultCh := make(chan StorageEntry)
+func (kv *Storage) Get(key string) Entry {
+	resultCh := make(chan Entry)
 	kv.readCh <- readRequest{key: key, resultCh: resultCh}
 	return <-resultCh
 }
 
-func (kv *Storage) Set(key string, value StorageEntry) {
+func (kv *Storage) Set(key string, value Entry) {
 	done := make(chan struct{})
 	kv.writeCh <- writeRequest{key: key, value: value, done: done}
 	<-done
