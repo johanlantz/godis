@@ -36,8 +36,9 @@ func StartServer(config ServerConfig, storage resp.KVStorage) {
 	}
 	defer listener.Close()
 
-	processingChannel := make(chan []byte)
-	resp.StartCommandProcessor(processingChannel, storage)
+	requestChannel := make(chan []byte)
+	responseChannel := make(chan []byte)
+	resp.StartCommandProcessor(requestChannel, responseChannel, storage)
 
 	for {
 		conn, err := listener.Accept()
@@ -45,11 +46,11 @@ func StartServer(config ServerConfig, storage resp.KVStorage) {
 			log.Println("Error accepting connection:", err.Error())
 			return
 		}
-		go handleConnection(conn, processingChannel)
+		go handleConnection(conn, requestChannel, responseChannel)
 	}
 }
 
-func handleConnection(conn net.Conn, processingChannel chan []byte) {
+func handleConnection(conn net.Conn, requestChannel chan<- []byte, responseChannel <-chan []byte) {
 	defer conn.Close()
 
 	for {
@@ -62,8 +63,8 @@ func handleConnection(conn net.Conn, processingChannel chan []byte) {
 
 		log.Printf("Received: %s\n", string(bytes[:n]))
 
-		processingChannel <- bytes[:n]
-		response := <-processingChannel
+		requestChannel <- bytes[:n]
+		response := <-responseChannel
 
 		_, err = conn.Write([]byte(response))
 		if err != nil {

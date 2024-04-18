@@ -26,4 +26,5 @@ const (
 	RESP_GET  RespCommand = "GET"
 	RESP_SET  RespCommand = "SET"
 	RESP_INCR RespCommand = "INCR"
+	RESP_DEL  RespCommand = "DEL"
 )
