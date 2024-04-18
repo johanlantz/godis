@@ -55,19 +55,3 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, config.port, defaultPort)
 	require.Equal(t, config.protocol, defaultProtocol)
 }
-
-// func TestHandleConnection(t *testing.T) {
-// 	storage := storage.NewStorage()
-// 	mockConn := MockConn{}
-// 	_, err := mockConn.Write(utils.MarshalToResp("SET masterKey myValue"))
-// 	require.NoError(t, err)
-// 	handleConnection(&mockConn, resp.NewRespCommandProcessor(storage))
-
-// 	time.Sleep(time.Millisecond * 100)
-// 	bytes := make([]byte, 1024)
-// 	n, err := mockConn.Read(bytes)
-// 	require.NoError(t, err)
-// 	require.Greater(t, n, 0)
-// 	require.Contains(t, string(bytes[:n]), "+OK\r\n")
-// 	mockConn.Close()
-// }

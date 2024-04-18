@@ -1,5 +1,5 @@
 // Simplest storage possible but it requires someone else guaranteeing
-// sequential execution. In the current solution this is managed by the
+// sequential access. In the current solution this is managed by the
 // resp processor so this is ok.
 package storage
 
