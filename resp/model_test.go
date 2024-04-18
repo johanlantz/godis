@@ -52,9 +52,9 @@ func TestSetCommandWithQuotes(t *testing.T) {
 	require.Equal(t, len(cmd.args), 2)
 }
 
-// func TestSetCommandWithQuotesAndSpaces(t *testing.T) {
-// 	cmd, err := newRespRequest(utils.MarshalToResp("SET masterKey \"abc 123\"\r\n"), utils.Keys(processors))
-// 	require.NoError(t, err)
-// 	require.Equal(t, cmd.command, RESP_SET)
-// 	require.Equal(t, len(cmd.args), 2)
-// }
+func TestSetCommandWithQuotesAndSpaces(t *testing.T) {
+	cmd, err := newRespRequest([]byte("*3\r\n$3\r\nSET\r\nmasterKey\r\n\"abc 123\"\r\n"), utils.Keys(processors))
+	require.NoError(t, err)
+	require.Equal(t, cmd.command, RESP_SET)
+	require.Equal(t, len(cmd.args), 2)
+}
