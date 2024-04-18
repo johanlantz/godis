@@ -104,3 +104,42 @@ func TestBool(t *testing.T) {
 	response = <-processingChannel
 	require.Equal(t, "#f\r\n", string(response))
 }
+
+func TestIncrWithNilValue(t *testing.T) {
+	var response []byte
+	for i := 0; i < 15; i++ {
+		processingChannel <- utils.MarshalToResp("INCR myKey")
+		response = <-processingChannel
+		require.Equal(t, "+OK\r\n", string(response))
+	}
+	processingChannel <- utils.MarshalToResp("GET myKey")
+	response = <-processingChannel
+	require.Equal(t, ":15\r\n", string(response))
+}
+
+func TestIncrWithStartValue(t *testing.T) {
+	var response []byte
+	processingChannel <- utils.MarshalToResp("SET myKey 99")
+	response = <-processingChannel
+	require.Equal(t, "+OK\r\n", string(response))
+
+	for i := 0; i < 5; i++ {
+		processingChannel <- utils.MarshalToResp("INCR myKey")
+		response = <-processingChannel
+		require.Equal(t, "+OK\r\n", string(response))
+	}
+	processingChannel <- utils.MarshalToResp("GET myKey")
+	response = <-processingChannel
+	require.Equal(t, ":104\r\n", string(response))
+}
+
+func TestIncrWithIncorrectValueType(t *testing.T) {
+	var response []byte
+	processingChannel <- utils.MarshalToResp("SET myKey hello")
+	response = <-processingChannel
+	require.Equal(t, "+OK\r\n", string(response))
+
+	processingChannel <- utils.MarshalToResp("INCR myKey")
+	response = <-processingChannel
+	require.Contains(t, string(response), "WRONGTYPE")
+}

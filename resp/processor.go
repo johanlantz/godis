@@ -5,6 +5,7 @@ package resp
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/johanlantz/redis/storage"
@@ -21,8 +22,9 @@ type RespFunc = func(request *RespRequest, kv KVStorage) (*RespResponse, error)
 
 // Implementing new commands only requires adding an entry here.
 var processors = map[RespCommand]RespFunc{
-	RESP_GET: process_get,
-	RESP_SET: process_set,
+	RESP_GET:  process_get,
+	RESP_SET:  process_set,
+	RESP_INCR: process_incr,
 }
 
 // Redis proccesses in a single thread. This "event loop" provides the
@@ -79,6 +81,27 @@ func process_set(request *RespRequest, kv KVStorage) (*RespResponse, error) {
 		kv.Set(key, storage.Entry{DataType: DT_BOOLEANS, Value: []byte{value[0]}})
 	} else {
 		kv.Set(key, storage.Entry{DataType: DT_SIMPLE_STRING, Value: []byte(value)})
+	}
+	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil
+}
+
+func process_incr(request *RespRequest, kv KVStorage) (*RespResponse, error) {
+	if len(request.args) != 1 {
+		return nil, errors.New("incr command requires only key argument")
+	}
+	key := request.args[0]
+	entry := kv.Get(request.args[0])
+
+	if entry.IsNull() {
+		kv.Set(key, storage.Entry{DataType: DT_INTEGER, Value: []byte("1")})
+	} else if entry.DataType != DT_INTEGER {
+		return nil, errors.New("WRONGTYPE existing value for key is not an integer")
+	} else {
+		if stored, err := strconv.Atoi(string(entry.Value)); err == nil {
+			kv.Set(key, storage.Entry{DataType: DT_INTEGER, Value: []byte(fmt.Sprint(stored + 1))})
+		} else {
+			return nil, errors.New("FATAL storage corrupt")
+		}
 	}
 	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil
 }
