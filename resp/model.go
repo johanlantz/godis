@@ -17,10 +17,8 @@ type RespRequest struct {
 	args    []string
 }
 
-var supportedCommands = []RespCommand{RESP_GET, RESP_SET}
-
 // Perform basic validation and Build a RespRequest from an incoming command.
-func newRespRequest(bytes []byte) (*RespRequest, error) {
+func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest, error) {
 	cmd := string(bytes)
 
 	// 1. Must be a bulk string array starting with * and ending with \r\n.

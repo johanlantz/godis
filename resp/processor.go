@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/johanlantz/redis/storage"
+	"github.com/johanlantz/redis/utils"
 )
 
 // Open up for different kinds of storage in the future
@@ -18,8 +19,7 @@ type KVStorage interface {
 
 type RespFunc = func(request *RespRequest, kv KVStorage) (*RespResponse, error)
 
-// These are all our implemented commands. Implementing new ones only requires
-// adding an entry here with the corresponding processor function.
+// Implementing new commands only requires adding an entry here.
 var processors = map[RespCommand]RespFunc{
 	RESP_GET: process_get,
 	RESP_SET: process_set,
@@ -37,7 +37,7 @@ func StartCommandProcessor(processingChannel chan []byte, storage KVStorage) {
 }
 
 func processCommand(bytes []byte, processingChannel chan []byte, storage KVStorage) {
-	request, err := newRespRequest(bytes)
+	request, err := newRespRequest(bytes, utils.Keys(processors))
 	var response *RespResponse
 
 	if err != nil {
