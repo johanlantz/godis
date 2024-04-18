@@ -1,4 +1,3 @@
-# redis
+# godis
 
-Assignment implementing basic features of the Redis RESP protocol in Go.
-
+Tiny redis server in Go (and also the swedish word for candy).

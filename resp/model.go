@@ -27,7 +27,7 @@ func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest
 	}
 
 	// 2. Generate our array of command segments from the bulk string array.
-	bulk_array := strings.Fields(cmd[:len(cmd)-len(suffix)])
+	bulk_array := strings.Split(cmd[:len(cmd)-len(suffix)], suffix)
 	cmd_arr := []string{}
 	for _, element := range bulk_array {
 		if element[0] != DT_BULK_STRINGS && element[0] != DT_ARRAYS {
