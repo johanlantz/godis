@@ -1,4 +1,4 @@
-// Resp protocol models for requests and responses
+// RESP protocol models for requests and responses
 package resp
 
 import (
@@ -17,7 +17,7 @@ type RespRequest struct {
 	args    []string
 }
 
-// Perform basic validation and Build a RespRequest from an incoming command.
+// Perform basic validation and build a RespRequest from an incoming command.
 func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest, error) {
 	cmd := string(bytes)
 
