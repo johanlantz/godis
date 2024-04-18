@@ -16,6 +16,7 @@ import (
 type KVStorage interface {
 	Get(key string) storage.Entry
 	Set(key string, value storage.Entry)
+	Delete(key string)
 }
 
 type RespFunc = func(request *RespRequest, kv KVStorage) (*RespResponse, error)
@@ -25,26 +26,27 @@ var processors = map[RespCommand]RespFunc{
 	RESP_GET:  process_get,
 	RESP_SET:  process_set,
 	RESP_INCR: process_incr,
+	RESP_DEL:  process_del,
 }
 
 // Redis proccesses in a single thread. This "event loop" provides the
 // same behaviour while offering concurrency for the incoming connections.
 // It also means the storage does not have to worry about race conditions.
-func StartCommandProcessor(processingChannel chan []byte, storage KVStorage) {
+func StartCommandProcessor(requestChannel <-chan []byte, responseChannel chan<- []byte, storage KVStorage) {
 	go func() {
-		for request := range processingChannel {
-			processCommand(request, processingChannel, storage)
+		for request := range requestChannel {
+			processCommand(request, responseChannel, storage)
 		}
 	}()
 }
 
-func processCommand(bytes []byte, processingChannel chan []byte, storage KVStorage) {
+func processCommand(bytes []byte, responseChannel chan<- []byte, storage KVStorage) {
 	request, err := newRespRequest(bytes, utils.Keys(processors))
 	var response *RespResponse
 
 	if err != nil {
 		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
-		processingChannel <- response.marshalToBytes()
+		responseChannel <- response.marshalToBytes()
 		return
 	}
 
@@ -53,7 +55,7 @@ func processCommand(bytes []byte, processingChannel chan []byte, storage KVStora
 	if err != nil {
 		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
 	}
-	processingChannel <- response.marshalToBytes()
+	responseChannel <- response.marshalToBytes()
 }
 
 func process_get(request *RespRequest, kv KVStorage) (*RespResponse, error) {
@@ -104,4 +106,19 @@ func process_incr(request *RespRequest, kv KVStorage) (*RespResponse, error) {
 		}
 	}
 	return newRespResponse(DT_SIMPLE_STRING, []string{RESP_OK}), nil
+}
+
+func process_del(request *RespRequest, kv KVStorage) (*RespResponse, error) {
+	if len(request.args) < 1 {
+		return nil, errors.New("del command requires at least one key argument")
+	}
+	deleteCount := 0
+	for _, arg := range request.args {
+		entry := kv.Get(arg)
+		if !entry.IsNull() {
+			kv.Delete(arg)
+			deleteCount++
+		}
+	}
+	return newRespResponse(DT_INTEGER, []string{fmt.Sprint(deleteCount)}), nil
 }

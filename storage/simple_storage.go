@@ -18,3 +18,7 @@ func (kv *SimpleStorage) Get(key string) Entry {
 func (kv *SimpleStorage) Set(key string, value Entry) {
 	kv.data[key] = value
 }
+
+func (kv *SimpleStorage) Delete(key string) {
+	delete(kv.data, key)
+}
