@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/johanlantz/redis/storage"
-	"github.com/johanlantz/redis/utils"
 )
 
 // Open up for different kinds of storage in the future
@@ -41,7 +40,7 @@ func StartCommandProcessor(requestChannel <-chan []byte, responseChannel chan<- 
 }
 
 func processCommand(bytes []byte, responseChannel chan<- []byte, storage KVStorage) {
-	request, err := newRespRequest(bytes, utils.Keys(processors))
+	request, err := newRespRequest(bytes, &processors)
 	var response *RespResponse
 
 	if err != nil {

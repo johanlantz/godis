@@ -4,7 +4,6 @@ package resp
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -18,7 +17,7 @@ type RespRequest struct {
 }
 
 // Perform basic validation and build a RespRequest from an incoming command.
-func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest, error) {
+func newRespRequest(bytes []byte, processors *map[RespCommand]RespFunc) (*RespRequest, error) {
 	cmd := string(bytes)
 
 	// 1. Must be a bulk string array starting with * and ending with \r\n.
@@ -34,11 +33,17 @@ func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest
 			cmd_arr = append(cmd_arr, element)
 		}
 	}
-	cmd_verb := RespCommand(cmd_arr[0])
+	cmdVerb := RespCommand(cmd_arr[0])
 
 	// 3. The command must be supported by our current implementation
-	if !slices.Contains(supportedCommands, cmd_verb) {
-		return nil, fmt.Errorf("unknown command, %s", cmd_verb)
+	cmdSupported := false
+	for key := range *processors {
+		if cmdVerb == key {
+			cmdSupported = true
+		}
+	}
+	if !cmdSupported {
+		return nil, fmt.Errorf("unknown command, %s", cmdVerb)
 	}
 
 	// 4. Each command processor is responsible for validating the args later on.
@@ -47,7 +52,7 @@ func newRespRequest(bytes []byte, supportedCommands []RespCommand) (*RespRequest
 		cmd_args = cmd_arr[1:]
 	}
 
-	return &RespRequest{command: cmd_verb, args: cmd_args}, nil
+	return &RespRequest{command: cmdVerb, args: cmd_args}, nil
 }
 
 type ResponseDataType byte

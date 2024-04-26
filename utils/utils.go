@@ -15,11 +15,3 @@ func MarshalToResp(cmd string) []byte {
 	}
 	return bytes
 }
-
-func Keys[K comparable, V any](m map[K]V) []K {
-	var s []K
-	for key := range m {
-		s = append(s, key)
-	}
-	return s
-}
