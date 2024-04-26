@@ -4,10 +4,18 @@ package resp
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 var suffix = "\r\n"
+
+type incompleteRespCommandError struct {
+}
+
+func (e *incompleteRespCommandError) Error() string {
+	return "incomplete"
+}
 
 type RespCommand string
 
@@ -20,13 +28,31 @@ type RespRequest struct {
 func newRespRequest(bytes []byte, processors *map[RespCommand]RespFunc) (*RespRequest, error) {
 	cmd := string(bytes)
 
-	// 1. Must be a bulk string array starting with * and ending with \r\n.
-	if len(cmd) < len(suffix) || cmd[0] != '*' || !strings.HasSuffix(cmd, suffix) {
+	// 1. Generate our array of command segments from the bulk string array.
+	bulkArray := strings.Split(cmd[:len(cmd)-len(suffix)], suffix)
+
+	// 2. The command must be fully received
+	var bulkStringCountWanted int
+	var err error
+	if bulkStringCountWanted, err = strconv.Atoi(bulkArray[0][1:]); err != nil {
+		return nil, errors.New("invalid array count argument ")
+	}
+
+	bulkStringCountReceived := (len(bulkArray) - 1) / 2
+	if bulkStringCountWanted != bulkStringCountReceived {
+		return nil, &incompleteRespCommandError{}
+	}
+
+	lastElementSize, err := strconv.Atoi(bulkArray[len(bulkArray)-2][1:])
+	if err != nil {
 		return nil, errors.New("invalid command")
 	}
 
-	// 2. Generate our array of command segments from the bulk string array.
-	bulkArray := strings.Split(cmd[:len(cmd)-len(suffix)], suffix)
+	if lastElementSize != len(bulkArray[len(bulkArray)-1]) {
+		return nil, &incompleteRespCommandError{}
+	}
+
+	// 3. Now keep only the actual command and not the RESP info.
 	cmdArray := []string{}
 	for _, element := range bulkArray {
 		if element[0] != DT_BULK_STRINGS && element[0] != DT_ARRAYS {
@@ -35,7 +61,7 @@ func newRespRequest(bytes []byte, processors *map[RespCommand]RespFunc) (*RespRe
 	}
 	cmdVerb := RespCommand(cmdArray[0])
 
-	// 3. The command must be supported by our current implementation
+	// 4. The command must be supported by our current implementation
 	cmdSupported := false
 	for key := range *processors {
 		if cmdVerb == key {

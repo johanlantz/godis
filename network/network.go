@@ -2,6 +2,7 @@
 package network
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -53,24 +54,32 @@ func StartServer(config ServerConfig, storage resp.KVStorage) {
 func handleConnection(conn net.Conn, requestChannel chan<- []byte, responseChannel <-chan []byte) {
 	defer conn.Close()
 
+	var buffer bytes.Buffer
+	readBuffer := make([]byte, 10) // Only to demonstrate segmentation support
 	for {
-		bytes := make([]byte, 1024)
-		n, err := conn.Read(bytes)
+
+		n, err := conn.Read(readBuffer)
 		if err != nil {
 			fmt.Println("Error reading:", err.Error())
 			break
 		}
 
-		log.Printf("Received: %s\n", string(bytes[:n]))
+		log.Printf("Received: %s\n", string(readBuffer[:n]))
 
-		requestChannel <- bytes[:n]
+		buffer.Write(readBuffer[:n])
+
+		requestChannel <- buffer.Bytes()[:len(buffer.Bytes())]
 		response := <-responseChannel
 
-		_, err = conn.Write([]byte(response))
-		if err != nil {
-			log.Println("Error writing:", err.Error())
-			break
+		if len(response) > 0 {
+			_, err = conn.Write([]byte(response))
+			if err != nil {
+				log.Println("Error writing:", err.Error())
+				break
+			}
+			buffer.Reset()
 		}
+
 	}
 	log.Printf("closing connection")
 }
