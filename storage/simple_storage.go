@@ -8,6 +8,7 @@ type SimpleStorage struct {
 }
 
 func NewSimpleStorage() *SimpleStorage {
+
 	return &SimpleStorage{data: make(map[string]Entry)}
 }
 
