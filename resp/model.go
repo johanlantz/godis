@@ -21,19 +21,19 @@ func newRespRequest(bytes []byte, processors *map[RespCommand]RespFunc) (*RespRe
 	cmd := string(bytes)
 
 	// 1. Must be a bulk string array starting with * and ending with \r\n.
-	if len(cmd) < len(suffix) || cmd[0] != '*' || cmd[len(cmd)-len(suffix):] != suffix {
+	if len(cmd) < len(suffix) || cmd[0] != '*' || !strings.HasSuffix(cmd, suffix) {
 		return nil, errors.New("invalid command")
 	}
 
 	// 2. Generate our array of command segments from the bulk string array.
-	bulk_array := strings.Split(cmd[:len(cmd)-len(suffix)], suffix)
-	cmd_arr := []string{}
-	for _, element := range bulk_array {
+	bulkArray := strings.Split(cmd[:len(cmd)-len(suffix)], suffix)
+	cmdArray := []string{}
+	for _, element := range bulkArray {
 		if element[0] != DT_BULK_STRINGS && element[0] != DT_ARRAYS {
-			cmd_arr = append(cmd_arr, element)
+			cmdArray = append(cmdArray, element)
 		}
 	}
-	cmdVerb := RespCommand(cmd_arr[0])
+	cmdVerb := RespCommand(cmdArray[0])
 
 	// 3. The command must be supported by our current implementation
 	cmdSupported := false
@@ -48,8 +48,8 @@ func newRespRequest(bytes []byte, processors *map[RespCommand]RespFunc) (*RespRe
 
 	// 4. Each command processor is responsible for validating the args later on.
 	cmd_args := []string{}
-	if len(cmd_arr) > 1 {
-		cmd_args = cmd_arr[1:]
+	if len(cmdArray) > 1 {
+		cmd_args = cmdArray[1:]
 	}
 
 	return &RespRequest{command: cmdVerb, args: cmd_args}, nil

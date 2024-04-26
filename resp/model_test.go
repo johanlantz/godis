@@ -58,3 +58,10 @@ func TestSetCommandWithQuotesAndSpaces(t *testing.T) {
 	require.Equal(t, cmd.command, RESP_SET)
 	require.Equal(t, len(cmd.args), 2)
 }
+
+func TestSetCommandWithNewlinesAndDollarSign(t *testing.T) {
+	cmd, err := newRespRequest([]byte("*3\r\n$3\r\nSET\r\n$2\r\ngg\r\n$13\r\nmy\\r\\n$12\\r\\n\r\n"), &processors)
+	require.NoError(t, err)
+	require.Equal(t, cmd.command, RESP_SET)
+	require.Equal(t, len(cmd.args), 2)
+}
