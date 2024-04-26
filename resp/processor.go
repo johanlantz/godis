@@ -18,6 +18,22 @@ type KVStorage interface {
 	Delete(key string)
 }
 
+// Requests from the network layer now have their own ResponseChannels
+// The internal types are still generic.
+type NetworkRequest struct {
+	ResponseChannel chan<- []byte
+	Data            []byte
+}
+
+// Actual execution of the validated commands are no offloaded to new goroutines.
+type RespExecRequest struct {
+	request         *RespRequest
+	ResponseChannel chan<- []byte
+	storage         KVStorage
+}
+
+var respExecChannel = make(chan RespExecRequest)
+
 type RespFunc = func(request *RespRequest, kv KVStorage) (*RespResponse, error)
 
 // Implementing new commands only requires adding an entry here.
@@ -31,35 +47,49 @@ var processors = map[RespCommand]RespFunc{
 // Redis proccesses in a single thread. This "event loop" provides the
 // same behaviour while offering concurrency for the incoming connections.
 // It also means the storage does not have to worry about race conditions.
-func StartCommandProcessor(requestChannel <-chan []byte, responseChannel chan<- []byte, storage KVStorage) {
+func StartCommandProcessor(requestChannel <-chan NetworkRequest, storage KVStorage) {
 	go func() {
-		for request := range requestChannel {
-			processCommand(request, responseChannel, storage)
+		for networkRequest := range requestChannel {
+			processNetworkRequest(networkRequest, storage)
+		}
+	}()
+
+	go func() {
+		for respExecRequest := range respExecChannel {
+			processRespExecRequest(respExecRequest)
 		}
 	}()
 }
 
-func processCommand(bytes []byte, responseChannel chan<- []byte, storage KVStorage) {
-	request, err := newRespRequest(bytes, &processors)
+func processNetworkRequest(networkRequest NetworkRequest, storage KVStorage) {
+	request, err := newRespRequest(networkRequest.Data, &processors)
 	var response *RespResponse
 
 	if err != nil {
 		switch err.(type) {
 		case *incompleteRespCommandError:
-			responseChannel <- []byte("")
+			networkRequest.ResponseChannel <- []byte("")
 		default:
 			response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
-			responseChannel <- response.marshalToBytes()
+			networkRequest.ResponseChannel <- response.marshalToBytes()
 		}
 		return
 	}
 
-	response, err = processors[request.command](request, storage)
+	// The preparsing was successful, handoff to the executor
+	go func() {
+		storageRequest := RespExecRequest{request, networkRequest.ResponseChannel, storage}
+		respExecChannel <- storageRequest
+	}()
+}
+
+func processRespExecRequest(storageRequest RespExecRequest) {
+	response, err := processors[storageRequest.request.command](storageRequest.request, storageRequest.storage)
 
 	if err != nil {
 		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
 	}
-	responseChannel <- response.marshalToBytes()
+	storageRequest.ResponseChannel <- response.marshalToBytes()
 }
 
 func process_get(request *RespRequest, kv KVStorage) (*RespResponse, error) {

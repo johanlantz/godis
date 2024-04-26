@@ -37,9 +37,9 @@ func StartServer(config ServerConfig, storage resp.KVStorage) {
 	}
 	defer listener.Close()
 
-	requestChannel := make(chan []byte)
-	responseChannel := make(chan []byte)
-	resp.StartCommandProcessor(requestChannel, responseChannel, storage)
+	requestChannel := make(chan resp.NetworkRequest)
+
+	resp.StartCommandProcessor(requestChannel, storage)
 
 	for {
 		conn, err := listener.Accept()
@@ -47,12 +47,14 @@ func StartServer(config ServerConfig, storage resp.KVStorage) {
 			log.Println("Error accepting connection:", err.Error())
 			return
 		}
-		go handleConnection(conn, requestChannel, responseChannel)
+		go handleConnection(conn, requestChannel)
 	}
 }
 
-func handleConnection(conn net.Conn, requestChannel chan<- []byte, responseChannel <-chan []byte) {
+func handleConnection(conn net.Conn, requestChannel chan<- resp.NetworkRequest) {
 	defer conn.Close()
+
+	responseChannel := make(chan []byte)
 
 	var buffer bytes.Buffer
 	readBuffer := make([]byte, 10) // Only to demonstrate segmentation support
@@ -68,7 +70,9 @@ func handleConnection(conn net.Conn, requestChannel chan<- []byte, responseChann
 
 		buffer.Write(readBuffer[:n])
 
-		requestChannel <- buffer.Bytes()[:len(buffer.Bytes())]
+		request := resp.NetworkRequest{ResponseChannel: responseChannel, Data: buffer.Bytes()[:len(buffer.Bytes())]}
+
+		requestChannel <- request
 		response := <-responseChannel
 
 		if len(response) > 0 {
