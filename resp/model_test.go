@@ -53,7 +53,7 @@ func TestSetCommandWithQuotes(t *testing.T) {
 }
 
 func TestSetCommandWithQuotesAndSpaces(t *testing.T) {
-	cmd, err := newRespRequest([]byte("*3\r\n$3\r\nSET\r\nmasterKey\r\n\"abc 123\"\r\n"), &processors)
+	cmd, err := newRespRequest([]byte("*3\r\n$3\r\nSET\r\n$9\r\nmasterKey\r\n$7\r\nabc 123\r\n"), &processors)
 	require.NoError(t, err)
 	require.Equal(t, cmd.command, RESP_SET)
 	require.Equal(t, len(cmd.args), 2)

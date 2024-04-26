@@ -44,8 +44,13 @@ func processCommand(bytes []byte, responseChannel chan<- []byte, storage KVStora
 	var response *RespResponse
 
 	if err != nil {
-		response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
-		responseChannel <- response.marshalToBytes()
+		switch err.(type) {
+		case *incompleteRespCommandError:
+			responseChannel <- []byte("")
+		default:
+			response = newRespResponse(DT_SIMPLE_ERROR, []string{RESP_ERR, err.Error()})
+			responseChannel <- response.marshalToBytes()
+		}
 		return
 	}
 
